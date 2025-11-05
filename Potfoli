@@ -1,0 +1,111 @@
+-- ===============================================
+-- SQL Portfolio Project
+-- Author: Prashant Bhor
+-- Purpose: Showcase SQL design, data manipulation,
+--          and analytical query skills
+-- ===============================================
+
+-- 1️⃣ Create database
+CREATE DATABASE IF NOT EXISTS company_portfolio;
+USE company_portfolio;
+
+-- 2️⃣ Create tables
+CREATE TABLE departments (
+    dept_id INT AUTO_INCREMENT PRIMARY KEY,
+    dept_name VARCHAR(100) NOT NULL,
+    location VARCHAR(100)
+);
+
+CREATE TABLE employees (
+    emp_id INT AUTO_INCREMENT PRIMARY KEY,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    gender ENUM('Male'),
+    hire_date DATE,
+    salary DECIMAL(10,2),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+
+CREATE TABLE projects (
+    project_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_name VARCHAR(100),
+    start_date DATE,
+    end_date DATE,
+    budget DECIMAL(12,2),
+    dept_id INT,
+    FOREIGN KEY (dept_id) REFERENCES departments(dept_id)
+);
+
+CREATE TABLE project_assignments (
+    emp_id INT,
+    project_id INT,
+    role VARCHAR(50),
+    hours_per_week INT,
+    PRIMARY KEY (emp_id, project_id),
+    FOREIGN KEY (emp_id) REFERENCES employees(emp_id),
+    FOREIGN KEY (project_id) REFERENCES projects(project_id)
+);
+
+-- 3️⃣ Insert sample data
+INSERT INTO departments (dept_name, location) VALUES
+('Engineering', 'Mumbai'),
+('Marketing', 'pune'),
+('Finance', 'Banglore'),
+('HR', 'Dehli');
+
+INSERT INTO employees (first_name, last_name, gender, hire_date, salary, dept_id) VALUES
+('shital', 'shinde', 'Female', '2019-03-15', 95000, 1),
+('Aditi', 'Wayal', 'Female', '2020-06-01', 87000, 2),
+('Dipali', 'Gawade', 'Female', '2018-09-10', 120000, 1),
+('Rohan', 'Bhor', 'Male', '2021-01-20', 65000, 3),
+('Om', 'Shinde', 'male', '2022-04-12', 72000, 4);
+
+INSERT INTO projects (project_name, start_date, end_date, budget, dept_id) VALUES
+('AI Automation', '2023-01-01', '2023-12-31', 500000, 1),
+('Product Launch 2025', '2024-05-01', '2025-03-01', 300000, 2),
+('Financial Audit', '2024-01-15', '2024-10-15', 150000, 3);
+
+INSERT INTO project_assignments (emp_id, project_id, role, hours_per_week) VALUES
+(1, 1, 'Data Scientist', 40),
+(3, 1, 'Project Lead', 35),
+(2, 2, 'Marketing Manager', 40),
+(4, 3, 'Financial Analyst', 30),
+(5, 2, 'HR Coordinator', 20);
+
+-- 4️⃣ Analytical Queries
+-- A. Average salary by department
+SELECT d.dept_name, ROUND(AVG(e.salary), 2) AS avg_salary
+FROM employees e
+JOIN departments d ON e.dept_id = d.dept_id
+GROUP BY d.dept_name
+ORDER BY avg_salary DESC;
+
+-- B. Employees working on multiple projects
+SELECT e.first_name, e.last_name, COUNT(pa.project_id) AS total_projects
+FROM employees e
+JOIN project_assignments pa ON e.emp_id = pa.emp_id
+GROUP BY e.emp_id
+HAVING total_projects > 1;
+
+-- C. Top 3 highest paid employees (window function)
+SELECT first_name, last_name, salary,
+       RANK() OVER (ORDER BY salary DESC) AS salary_rank
+FROM employees
+LIMIT 3;
+
+-- D. Department project budget summary (CTE + aggregation)
+WITH dept_budget AS (
+    SELECT d.dept_name, SUM(p.budget) AS total_budget
+    FROM departments d
+    JOIN projects p ON d.dept_id = p.dept_id
+    GROUP BY d.dept_name
+)
+SELECT * FROM dept_budget ORDER BY total_budget DESC;
+
+-- E. Find projects still ongoing today
+SELECT project_name, start_date, end_date
+FROM projects
+WHERE CURDATE() BETWEEN start_date AND end_date;
+
+
